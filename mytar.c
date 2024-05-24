@@ -219,37 +219,19 @@ void op_t(char *filename)
         } // we jump to the next header
         
 
-        //printf("check %i\n", check);
-            //printf("Bin dort 3\n");
-        if(feof(tar_file)){
-             printf("Check 1 %i\n", check);
-        }
-        printf("Check 2 %i\n", check);
-
         if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
-            //printf("Bin dort 4\n");
-            //printf("check %i\n", check);
             trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } 
         check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
-        if(feof(tar_file)){
-            printf("Moin %i\n", check);
-        }
-        //printf("Bin dort 6\n");
-        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
 
-        if(feof(tar_file)){
-            printf("Check 3 %i\n", check);
-        }
+        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
         if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
-            //printf("Bin dort 4\n");
-            //printf("check %i\n", check);
             trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } // we jump to the next header
         if(check == 0){
-             printf("Check 5 %i\n", check);
+             //printf("Check 5 %i\n", check);
             trunc = 0;
             break;
         }
