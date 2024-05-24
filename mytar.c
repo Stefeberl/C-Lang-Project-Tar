@@ -197,7 +197,7 @@ void op_t(char *filename)
         fseek(tar_file, filesize + padding, SEEK_CUR);
 
         if (check < 2 * BLOCK_SIZE && check != 0)
-        { // Detects truncation at macos
+        { // Detects truncation at Mac OS
             trunc = 1;
             break;
         }
