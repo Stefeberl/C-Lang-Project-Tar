@@ -196,10 +196,9 @@ void op_t(char *filename)
 
         // ------- Test 005 -----
         if (!spec_argc || find_argument(spec_argc,spec_argv,filename,ticklist_args)){ // if we have actual specific filename arguments
-            printf("%i, %s\n", count, filename); // We can now print the name.
-        }
+            printf("%s\n", filename); // We can now print the name.
         count++;
-        
+        }
         
 
         // We have to jump to the next header for the next tar entry, thats done by file size + padding.
@@ -211,9 +210,9 @@ void op_t(char *filename)
         if ((filesize % BLOCK_SIZE) != 0)
         { // in most cases there is padding if not, padding is 0.
             padding = BLOCK_SIZE - (filesize % BLOCK_SIZE);
+        //printf("Juhuuu: %i\n", padding);
         }
 
-        
         if(fseek(tar_file, filesize + padding, SEEK_CUR)){ // ??? weiss nicht ob das klappt, bringt glaub nix fuer die 011
             fprintf(stderr, "mytar: Unexpected EOF 1 in archive\n");
             errx(2,"Error is not recoverable: exiting now");
@@ -221,20 +220,21 @@ void op_t(char *filename)
         
 
         //printf("check %i\n", check);
-        if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
+        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
             //printf("Bin dort 3\n");
+
+        if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
+            //printf("Bin dort 4\n");
             //printf("check %i\n", check);
             trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } // we jump to the next header
         if(check == 0){
-            printf("Bin dort 4\n");
+            //printf("Bin dort 5\n");
             trunc = 0;
             break;
         }
-
-        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
-
+        //printf("Bin dort 6\n");
         fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
 
     } 
