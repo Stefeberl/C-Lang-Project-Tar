@@ -129,7 +129,7 @@ void op_t(char *filename)
     int ticklist_args[N_ARGS] = {0};  //ticklist_args[spec_argc] is basically that in compile time 
     int trunc = 1;
 
-    fread(header, 1, 2*BLOCK_SIZE, tar_file);
+    int check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
     fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
 
     while (1)
@@ -216,23 +216,24 @@ void op_t(char *filename)
             errx(2,"Error is not recoverable: exiting now");
         } // we jump to the next header
         
+        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
 
-        //int check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
-        fread(header, 1, 2*BLOCK_SIZE, tar_file);
-        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
-        int check2 = feof(tar_file);
-        if(check2){
-            trunc = 0;
-            printf("Ende erreicht\n");
+        if(check < 2*BLOCK_SIZE && is_double_zero != 2){ // falls es aber 0 ist dann gings gerade auf
+            //printf("Bin dort 3\n");
+            //printf("check %i\n", check);
+            trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
-        }
+        } // we jump to the next header
 
-        //if(check < 2*BLOCK_SIZE && is_double_zero != 2){ // falls es aber 0 ist dann gings gerade auf
-        //    //printf("Bin dort 3\n");
-        //    //printf("check %i\n", check);
-        //    trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
+        //fread(header, 1, 2*BLOCK_SIZE, tar_file);
+        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
+        //int check2 = feof(tar_file); bringt nichts 
+        //if(check2){
+        //    trunc = 0;
+        //    errx(2,"Ende erreicht\n");
         //    break;
-        //} // we jump to the next header
+        //}
+
         //if(check == 0){
         //    //printf("Bin dort 4\n");
         //    trunc = 0;
