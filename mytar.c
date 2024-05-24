@@ -198,7 +198,6 @@ void op_t(char *filename)
 
         if (check < 2 * BLOCK_SIZE && check != 0)
         { // Detects truncation at macos
-            printf("Check 1 \n");
             trunc = 1;
             break;
         }
