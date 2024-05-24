@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
-//gcc -Wall -Wextra -o /afs/ms/u/e/eberles/Projekt/mytar /afs/ms/u/e/eberles/Projekt/mytar.c && ./run-tests.sh $(cat phase-1.tests)
+// gcc -Wall -Wextra -o /afs/ms/u/e/eberles/Projekt/mytar /afs/ms/u/e/eberles/Projekt/mytar.c && ./run-tests.sh $(cat phase-1.tests)
 
 #define BLOCK_SIZE 512
 #define FILE_NAME_SIZE 100
 #define N_OPERATIONS 3
-#define N_ARGS 30           // should be bigger than spec_argc !!! maybe assetrtion ???
+#define N_ARGS 30 // should be bigger than spec_argc !!! maybe assetrtion ???
 #define N_OPTIONS 2
 
 int Operations[N_OPERATIONS]; // Table in which is stored which of the (now) 3 Operation we should provide. Could be also a dicctor sth.
@@ -17,14 +17,11 @@ int sum_array(const int arr[], int size);
 int find_operation(const int arr[], int size);
 void op_t(char *filename);
 int is_tar(const char *arr, int size);
-int find_argument(int argc, char *argv[], const char *file_name,int *ticklist_args);
+int find_argument(int argc, char *argv[], const char *file_name, int *ticklist_args);
 void dump_hex(char *buffer, size_t size);
-//const char* opt_f(const char *argv,int i); // eventuell unnoetig ckann vlt raus ???
 
-char **spec_argv;
-int spec_argc = 0;
-
-//neu
+char **spec_argv;  // args array for specific filenames
+int spec_argc = 0; // number of specific filenames
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +29,7 @@ int main(int argc, char *argv[])
 
     //------------- Argument Handling ------------- //
 
+    // ------ Test 001 ------
     if (argc < 2)
     {
         err(2, "need at least one option");
@@ -44,7 +42,7 @@ int main(int argc, char *argv[])
         char *arg = argv[i];
         if (arg[0] == '-')
         {
-            
+
             char flag = arg[1];
             switch (flag)
             {
@@ -63,16 +61,12 @@ int main(int argc, char *argv[])
                 Options[0] = 1;
                 break;
             case 'f':
-                i++;        
+                i++;
                 spec_argv = argv + 4;
-                spec_argc = argc - 4;   
-                //for(int i = 0; i < spec_argc; i++){
-                //    printf("%s\n", spec_argv[i]);
-                //}
-                //strcpy(file_name,opt_f(argv,i));
+                spec_argc = argc - 4;
                 is_tar(*(argv + i), strlen(*(argv + i))); // checks if argument after -f exists and is .tar
                 strcpy(file_name, *(argv + i));           // same as strcpy(file_name, argv[i]));
-                
+
                 Options[1] = 1;
                 break;
             default:
@@ -122,85 +116,72 @@ void op_t(char *filename)
     FILE *tar_file = fopen(filename, "r+");
     if (tar_file == NULL)
     {
-       fprintf(stderr, "mytar: %s: Cannot open: No such file or directory\n",filename);
-        errx(2,"Error is not recoverable: exiting now");
+        fprintf(stderr, "mytar: %s: Cannot open: No such file or directory\n", filename);
+        errx(2, "Error is not recoverable: exiting now");
     }
-    char header[2*BLOCK_SIZE];
-    int ticklist_args[N_ARGS] = {0};  //ticklist_args[spec_argc] is basically that in compile time 
-    int trunc = 0;
+    char header[2 * BLOCK_SIZE];     // Buffer for the header and some insides of the file, we take two blocks to search for end of tar
+    int ticklist_args[N_ARGS] = {0}; // ticklist_args[spec_argc] is basically that in compile time
+    int trunc = 1;                   // Bool for truncation
 
-    int check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
-    fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
+    int check = fread(header, 1, 2 * BLOCK_SIZE, tar_file); // Bool for EOF
+    fseek(tar_file, -BLOCK_SIZE, SEEK_CUR);                 // we have to go back one block because we took 2*BLOCK_SIZE in header
 
     int count = 0;
     while (1)
     {
-        //printf("Count: %i\n", count);
-
         // ------- Test 002 -----
         // Check if the block is all zeros (indicates end of archive)
-        //dump_hex(header, 2*BLOCK_SIZE);
 
         int is_double_zero = 0;
-        for(int j = 0; j < 2 ; j++){
+        for (int j = 0; j < 2; j++)
+        {
             int is_empty_block = 1;
-            for (int i = j*BLOCK_SIZE; i < (j+1)*BLOCK_SIZE; i++)
+            for (int i = j * BLOCK_SIZE; i < (j + 1) * BLOCK_SIZE; i++)
             {
                 if (header[i] != 0)
                 {
-                    //printf("nonenmpty: %02x, an Stelle %i\n", header[i], BLOCK_SIZE-i);
                     is_empty_block = 0;
                     break;
-                } 
+                }
             }
             if (is_empty_block)
             {
-                //printf("Bin dort 0\n");
                 trunc = 0;
-                is_double_zero++; 
+                is_double_zero++;
             }
-            
-            else  break;
-        }
-        if(is_double_zero == 1){
 
-            //printf("Bin dort 1\n");
+            else
+                break;
+        }
+        if (is_double_zero == 1)
+        {
             fprintf(stderr, "mytar: A lone zero block at 22\n"); // ???  hardgecoded !!! ändern
             break;
         }
-        if(is_double_zero == 2){
-            //printf("Bin dort 2\n");
+        if (is_double_zero == 2)
+        {
             trunc = 0;
             break;
         }
 
-
-
+        // ------- Test 007 -----
         int typeflag = header[156];
-        if(typeflag % 48){
+        if (typeflag % 48)
+        {
             errx(2, "Unsupported header type: %i", typeflag);
         }
-        //check_type(header+156);
 
         // geTypet the name of the file out of the header (first 100 bytes)
         char filename[101]; // beware, the NUL byte \0 is not in the header, we have to add it
         strncpy(filename, header, 100);
         filename[100] = '\0';
 
-        // ------- Test 011 -----
-         if(!(*filename)){ // 
-            trunc = 0; // ??? ist das so richtig , sonst schlägt Test 005/6 fehl
-            break;
-        } // we jump to the next header
-
-
-
         // ------- Test 005 -----
-        if (!spec_argc || find_argument(spec_argc,spec_argv,filename,ticklist_args)){ // if we have actual specific filename arguments
+        if (!spec_argc || find_argument(spec_argc, spec_argv, filename, ticklist_args))
+        {                             // if we have actual specific filename arguments
             printf("%s\n", filename); // We can now print the name.
             count++;
         }
-        
 
         // We have to jump to the next header for the next tar entry, thats done by file size + padding.
         int filesize = 0;
@@ -209,70 +190,54 @@ void op_t(char *filename)
         sscanf(header + 124, "%o", &filesize); // We read the octal value of the file size stored in the header[124:135]
 
         if ((filesize % BLOCK_SIZE) != 0)
-        { // in most cases there is padding if not, padding is 0.
-            padding = BLOCK_SIZE - (filesize % BLOCK_SIZE);
-        //printf("Juhuuu: %i\n", padding);
+        {
+            padding = BLOCK_SIZE - (filesize % BLOCK_SIZE); // in most cases there is padding if not, padding is 0.
         }
 
-        if(fseek(tar_file, filesize + padding, SEEK_CUR)){ // ??? weiss nicht ob das klappt, bringt glaub nix fuer die 011
-            fprintf(stderr, "mytar: Unexpected EOF 1 in archive\n");
-            errx(2,"Error is not recoverable: exiting now");
-        } // we jump to the next header
-        
+        fseek(tar_file, filesize + padding, SEEK_CUR);
 
-        if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
-            //printf("Check 1 ");
-            trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
+        if (check < 2 * BLOCK_SIZE && check != 0)
+        { // Detects truncation at macos
+            printf("Check 1 \n");
+            trunc = 1;
             break;
-        } 
-        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
+        }
+        check = fread(header, 1, 2 * BLOCK_SIZE, tar_file);
 
-        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
-        if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
-            //printf("Check 2 \n");
-            fprintf(stderr, "mytar: A lone zero block at 22\n"); // ???  hardgecoded !!! ändern
-            trunc = 0; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
+        fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back one block because we took 2*BLOCK_SIZE.
+        if (check < 2 * BLOCK_SIZE && check != 0)
+        {                                                            // Detects lonely zero block
+            fprintf(stderr, "mytar: A lone zero block at %i\n", 22); // ???  Sorry for hardcoding the 22, I dont get what it means.
+            trunc = 0;
             break;
         } // we jump to the next header
-        if(check == 0){
-             //printf("Check 5 %i\n", check);
+        if (check == 0)
+        {
             trunc = 0;
             break;
         }
-
-    } 
-    
+    }
 
     // ------- Test 005 -----
     // Now we list files which we did not found in the archive.
     int turn = 0;
     for (int i = 0; i < spec_argc; i++)
     {
-
-        //printf("%i\n", ticklist_args[i]);
         if (!ticklist_args[i])
         {
             turn = 1;
-            //printf("spec_argc %s\n", spec_argv[i]);
-            fprintf(stderr, "mytar: %s: Not found in archive\n",spec_argv[i]); // ??? soll das so hardgecoded?
-            //errx(1, "%s: Not found in archive",spec_argv[i]);
+            fprintf(stderr, "mytar: %s: Not found in archive\n", spec_argv[i]);
         }
-
     }
-    if (turn){
-       errx(2, "Exiting with failure status due to previous errors");  
+    if (turn)
+    {
+        errx(2, "Exiting with failure status due to previous errors");
     }
-    //printf("mouin");
-    //printf("Trunc: %i\n", trunc);
-    if(trunc){
-        fprintf(stderr, "mytar: Unexpected EOF lol in archive\n");
-        errx(2,"Error is not recoverable: exiting now");  
+    if (trunc)
+    {
+        fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+        errx(2, "Error is not recoverable: exiting now");
     }
-    
-    
-
-
-
 
     fclose(tar_file);
 }
@@ -313,12 +278,12 @@ int find_operation(const int *arr, int size)
     return op;
 }
 
-
-
-
-
 /**
- * checks if argument after -f exists and is .tar
+ * @brief Checks if the file is a .tar file
+ *
+ * @param arr Array of characters
+ * @param size Size of the array
+ * @return int 1 if the file is a .tar file, 0 otherwise
  */
 int is_tar(const char *arr, int size)
 {
@@ -332,14 +297,22 @@ int is_tar(const char *arr, int size)
     return 1;
 }
 
-
-int find_argument(int argc, char *argv[], const char *file_name,int *ticklist_args)
+/*
+ * @brief Finds the file name in the arguments
+ *
+ * @param argc Number of arguments
+ * @param argv Array of arguments
+ * @param file_name Name of the file to find
+ * @param ticklist_args Array of arguments to tick off
+ * @return int 1 if the file was found, 0 otherwise
+ */
+int find_argument(int argc, char *argv[], const char *file_name, int *ticklist_args)
 {
     for (int i = 0; i < argc; ++i)
-    {   
-        
+    {
+
         if (strcmp(argv[i], file_name) == 0)
-        {   
+        {
             ticklist_args[i] = 1;
             return 1;
         }
@@ -347,28 +320,39 @@ int find_argument(int argc, char *argv[], const char *file_name,int *ticklist_ar
     return 0;
 }
 
-
-
-void dump_hex(char *buffer, size_t size) {
+/**
+ * @brief Dumps a buffer in hex format
+ *
+ * @param buffer
+ * @param size  Size of the buffer
+ */
+void dump_hex(char *buffer, size_t size)
+{
     printf("Blockanfang: \n");
     int is_zero_block = 1;
-    for (size_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++)
+    {
 
-        if(i == size/2){
+        if (i == size / 2)
+        {
             printf("Blockmitte \n");
-            if(is_zero_block){
+            if (is_zero_block)
+            {
                 printf("Block war leer\n");
             }
         }
         printf("%02x ", buffer[i]);
-        if ((i + 1) % 16 == 0) {
+        if ((i + 1) % 16 == 0)
+        {
             printf("\n");
         }
-        if(buffer[i] != 0){
+        if (buffer[i] != 0)
+        {
             is_zero_block = 0;
         }
     }
-    if(is_zero_block){
+    if (is_zero_block)
+    {
         printf("Block war leer\n");
     }
 }
