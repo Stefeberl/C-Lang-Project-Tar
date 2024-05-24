@@ -127,7 +127,7 @@ void op_t(char *filename)
     }
     char header[2*BLOCK_SIZE];
     int ticklist_args[N_ARGS] = {0};  //ticklist_args[spec_argc] is basically that in compile time 
-    int trunc = 1;
+    int trunc = 0;
 
     int check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
     fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
@@ -135,6 +135,7 @@ void op_t(char *filename)
     int count = 0;
     while (1)
     {
+        //printf("Count: %i\n", count);
 
         // ------- Test 002 -----
         // Check if the block is all zeros (indicates end of archive)
@@ -197,7 +198,7 @@ void op_t(char *filename)
         // ------- Test 005 -----
         if (!spec_argc || find_argument(spec_argc,spec_argv,filename,ticklist_args)){ // if we have actual specific filename arguments
             printf("%s\n", filename); // We can now print the name.
-        count++;
+            count++;
         }
         
 
@@ -220,6 +221,7 @@ void op_t(char *filename)
         
 
         if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
+            //printf("Check 1 ");
             trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } 
@@ -227,7 +229,9 @@ void op_t(char *filename)
 
         fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
         if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
-            trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
+            //printf("Check 2 \n");
+            fprintf(stderr, "mytar: A lone zero block at 22\n"); // ???  hardgecoded !!! ändern
+            trunc = 0; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } // we jump to the next header
         if(check == 0){
@@ -259,8 +263,9 @@ void op_t(char *filename)
        errx(2, "Exiting with failure status due to previous errors");  
     }
     //printf("mouin");
+    //printf("Trunc: %i\n", trunc);
     if(trunc){
-        fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+        fprintf(stderr, "mytar: Unexpected EOF lol in archive\n");
         errx(2,"Error is not recoverable: exiting now");  
     }
     
