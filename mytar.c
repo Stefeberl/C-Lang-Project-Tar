@@ -13,12 +13,12 @@
 int Operations[N_OPERATIONS]; // Table in which is stored which of the (now) 3 Operation we should provide. Could be also a dicctor sth.
 int Options[N_OPTIONS];       // Table in which is stored which of the (now) 2 OpTIONS we should provide. Could be also a dicctor sth.
 
-int sum_array(const int arr[], int size);
-int find_operation(const int arr[], int size);
-void op_t(char *filename);
-int is_tar(const char *arr, int size);
-int find_argument(int argc, char *argv[], const char *file_name, int *ticklist_args);
-void dump_hex(char *buffer, size_t size);
+int     sum_array(const int arr[], int size);
+int     find_operation(const int arr[], int size);
+void    op_t(char *filename);
+int     is_tar(const char *arr, int size);
+int     find_argument(int argc, char *argv[], const char *file_name, int *ticklist_args);
+void    dump_hex(char *buffer, size_t size);
 
 char **spec_argv;  // args array for specific filenames
 int spec_argc = 0; // number of specific filenames
@@ -111,6 +111,11 @@ int main(int argc, char *argv[])
 
 //--- Operations ----
 
+/**
+ * @brief Lists the content of a .tar file (-t)
+ *
+ * @param filename Name of the .tar file
+ */
 void op_t(char *filename)
 {
     FILE *tar_file = fopen(filename, "r+");
@@ -119,14 +124,14 @@ void op_t(char *filename)
         fprintf(stderr, "mytar: %s: Cannot open: No such file or directory\n", filename);
         errx(2, "Error is not recoverable: exiting now");
     }
-    char header[2 * BLOCK_SIZE];     // Buffer for the header and some insides of the file, we take two blocks to search for end of tar
-    int ticklist_args[N_ARGS] = {0}; // ticklist_args[spec_argc] is basically that in compile time
-    int trunc = 1;                   // Bool for truncation
+    char    header[2 * BLOCK_SIZE];     // Buffer for the header and some insides of the file, we take two blocks to search for end of tar
+    int     ticklist_args[N_ARGS] = {0}; // ticklist_args[spec_argc] is basically that in compile time
+    int     trunc = 1;                   // Bool for truncation
+    int     check = fread(header, 1, 2 * BLOCK_SIZE, tar_file); // Bool for EOF
+    int     count = 0;
 
-    int check = fread(header, 1, 2 * BLOCK_SIZE, tar_file); // Bool for EOF
     fseek(tar_file, -BLOCK_SIZE, SEEK_CUR);                 // we have to go back one block because we took 2*BLOCK_SIZE in header
 
-    int count = 0;
     while (1)
     {
         // ------- Test 002 -----
