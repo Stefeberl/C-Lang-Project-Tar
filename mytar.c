@@ -153,7 +153,7 @@ void op_t(char *filename)
             }
             if (is_empty_block)
             {
-                printf("Bin dort 0\n");
+                //printf("Bin dort 0\n");
                 trunc = 0;
                 is_double_zero++; 
             }
