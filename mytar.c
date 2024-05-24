@@ -132,6 +132,7 @@ void op_t(char *filename)
     int check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
     fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
 
+    int count = 0;
     while (1)
     {
 
@@ -195,8 +196,10 @@ void op_t(char *filename)
 
         // ------- Test 005 -----
         if (!spec_argc || find_argument(spec_argc,spec_argv,filename,ticklist_args)){ // if we have actual specific filename arguments
-            printf("%s\n", filename); // We can now print the name.
+            printf("%i, %s\n", count, filename); // We can now print the name.
         }
+        count++;
+        
         
 
         // We have to jump to the next header for the next tar entry, thats done by file size + padding.
@@ -216,29 +219,24 @@ void op_t(char *filename)
             errx(2,"Error is not recoverable: exiting now");
         } // we jump to the next header
         
-        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
 
-        if(check < 2*BLOCK_SIZE && is_double_zero != 2){ // falls es aber 0 ist dann gings gerade auf
+        //printf("check %i\n", check);
+        if(check < 2*BLOCK_SIZE && check != 0){ // falls es aber 0 ist dann gings gerade auf 
             //printf("Bin dort 3\n");
             //printf("check %i\n", check);
             trunc = 1; // ??? ist das so richtig , 1 für 11, 0 wenn 14 laufen soll
             break;
         } // we jump to the next header
+        if(check == 0){
+            printf("Bin dort 4\n");
+            trunc = 0;
+            break;
+        }
 
-        //fread(header, 1, 2*BLOCK_SIZE, tar_file);
+        check = fread(header, 1, 2*BLOCK_SIZE, tar_file);
+
         fseek(tar_file, -BLOCK_SIZE, SEEK_CUR); // we have to go back to the beginning of the block , wieder zurückdrehen, da wir 2 blocks gelesen haben.
-        //int check2 = feof(tar_file); bringt nichts 
-        //if(check2){
-        //    trunc = 0;
-        //    errx(2,"Ende erreicht\n");
-        //    break;
-        //}
 
-        //if(check == 0){
-        //    //printf("Bin dort 4\n");
-        //    trunc = 0;
-        //    break;
-        //}
     } 
     
 
@@ -247,6 +245,7 @@ void op_t(char *filename)
     int turn = 0;
     for (int i = 0; i < spec_argc; i++)
     {
+
         //printf("%i\n", ticklist_args[i]);
         if (!ticklist_args[i])
         {
@@ -311,12 +310,6 @@ int find_operation(const int *arr, int size)
 }
 
 
-
-
-//const char* opt_f(const char *argv,int i){
-//    is_tar(*(argv + i), strlen(*(argv + i))); // checks if argument after -f exists and is .tar
-//    return *(argv + i);
-//}
 
 
 
